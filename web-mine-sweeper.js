@@ -3,6 +3,17 @@ var elemBoard, ctx;
 var arSquares;
 const ST_NONE = 0;
 const ST_MINE = -1;
+const MINE_RATE = 0.15;
+const arMoves = [
+  {i: -1, j : -1}, 
+  {i: 0, j : -1}, 
+  {i: 1, j : -1}, 
+  {i: 1, j : 0}, 
+  {i: 1, j : 1}, 
+  {i: 0, j : 1}, 
+  {i: -1, j : 1}, 
+  {i: -1, j : 0}
+];
 
 window.onload = function () {
   // initialize board element & 2d-context
@@ -66,8 +77,9 @@ function drawBoard() {
 
 function drawTip(i, j) {
   if (arSquares[i][j].revealed) {
+    var tip = (arSquares[i][j].state == ST_MINE ? '*' : arSquares[i][j].state);
     var xy = pos2xy({ i, j });
-    ctx.fillText(arSquares[i][j].state, xy.x, xy.y + 20);
+    ctx.fillText(tip, xy.x, xy.y + 20);
   }
 }
 
@@ -93,6 +105,26 @@ function pos2xy(pos) {
   }
 }
 
+function checkBound(pos) {
+  return pos.i >= 0 && pos.i < maxx && pos.j >= 0 && pos.j < maxy;
+}
+
+function initSquares() {
+  arSquares = new Array();
+  // pass 1: random mines
+  for (var i = 0; i < maxx; ++i) {
+    arSquares[i] = new Array();
+    for (var j = 0; j < maxy; ++j)
+      arSquares[i][j] = createSquare(Math.random() < MINE_RATE ? ST_MINE : ST_NONE, false);
+  }
+  // pass 2: count ajacent mines
+  for (var i = 0; i < maxx; ++i) {
+    for (var j = 0; j < maxy; ++j)
+      if (arSquares[i][j].state == ST_NONE)
+        arSquares[i][j].state = countAjacentMines({ i, j });
+  }
+}
+
 function createSquare(state, revealed) {
   var sq = new Object();
   sq.state = state;
@@ -100,11 +132,13 @@ function createSquare(state, revealed) {
   return sq;
 }
 
-function initSquares() {
-  arSquares = new Array();
-  for (var i = 0; i < maxx; ++i) {
-    arSquares[i] = new Array();
-    for (var j = 0; j < maxy; ++j)
-      arSquares[i][j] = createSquare(ST_NONE, false);
+function countAjacentMines(pos) {
+  var count = 0;
+  for (var m = 0; m < 8; ++m) {
+    var next = {i: pos.i + arMoves[m].i, j: pos.j + arMoves[m].j} 
+    if (checkBound(next))
+      if (arSquares[next.i][next.j].state == ST_MINE)
+        ++count;
   }
+  return count;
 }
