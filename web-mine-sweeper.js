@@ -1,38 +1,47 @@
 var sz = 20, maxx = 5, maxy = 5;
-var board, ctx;
+var elemBoard, ctx;
+var arSquares;
+const ST_NONE = 0;
+const ST_MINE = -1;
 
 window.onload = function () {
   // initialize board element & 2d-context
-  board = document.getElementById("board");
-  ctx = board.getContext("2d");
+  elemBoard = document.getElementById("board");
+  ctx = elemBoard.getContext("2d");
 
-  // set board's size
-  board.width = sz * maxx;
-  board.height = sz * maxy;
+  // set elemBoard's size
+  elemBoard.width = sz * maxx;
+  elemBoard.height = sz * maxy;
 
   // disable context menu
-  board.oncontextmenu = function (e) {
+  elemBoard.oncontextmenu = function (e) {
     e.preventDefault();
   };
 
   // register mouse-up event
-  board.onmouseup = function (e) {
+  elemBoard.onmouseup = function (e) {
+    var canvasXY = getCanvasXY(elemBoard, e.clientX, e.clientY);
+    var pos = xy2pos(canvasXY);
     if (e.button == 0)
-      leftClicked(getSquarePos(board, e));
+      leftClicked(pos);
     else if (e.button == 2)
-      rightClicked(getSquarePos(board, e));
+      rightClicked(pos);
   };
 
-  // draw the whole board
+  initSquares();
+
+  // draw the whole elemBoard
   drawBoard();
 };
 
-function getSquarePos(canvas, e) {
-  var rect = canvas.getBoundingClientRect();
-  return {
-    x: Math.floor((e.clientX - rect.left * (canvas.width / rect.width)) / sz),
-    y: Math.floor((e.clientY - rect.top * (canvas.height / rect.height)) / sz)
-  };
+function leftClicked(pos) {
+  arSquares[pos.i][pos.j].revealed = true;
+  drawTip(pos.i, pos.j);
+}
+
+function rightClicked(pos) {
+  arSquares[pos.i][pos.j].revealed = true;
+  drawTip(pos.i, pos.j);
 }
 
 function drawBoard() {
@@ -46,14 +55,56 @@ function drawBoard() {
     ctx.moveTo(0, i * sz);
     ctx.lineTo(maxx * sz, i * sz);
   }
-
   ctx.stroke();
+
+  ctx.font = "italic 28px 黑体";
+  ctx.fillStyle = "red";
+  for (var i = 0; i < maxx; ++i)
+    for (var j = 0; j < maxy; ++j)
+      drawTip(i, j);
 }
 
-function leftClicked(pos) {
-  alert("leftClicked: " + pos.x + " " + pos.y);
+function drawTip(i, j) {
+  if (arSquares[i][j].revealed) {
+    var xy = pos2xy({ i, j });
+    ctx.fillText(arSquares[i][j].state, xy.x, xy.y + 20);
+  }
 }
 
-function rightClicked(pos) {
-  alert("rightClicked: " + pos.x + " " + pos.y);
+function getCanvasXY(canvas, x, y) {
+  var rect = canvas.getBoundingClientRect();
+  return {
+    x: Math.floor((x - rect.left) * (canvas.width / rect.width)),
+    y: Math.floor((y - rect.top) * (canvas.height / rect.height))
+  };
+}
+
+function xy2pos(xy) {
+  return {
+    i: Math.floor(xy.x / sz),
+    j: Math.floor(xy.y / sz)
+  };
+}
+
+function pos2xy(pos) {
+  return {
+    x: pos.i * sz,
+    y: pos.j * sz
+  }
+}
+
+function createSquare(state, revealed) {
+  var sq = new Object();
+  sq.state = state;
+  sq.revealed = revealed;
+  return sq;
+}
+
+function initSquares() {
+  arSquares = new Array();
+  for (var i = 0; i < maxx; ++i) {
+    arSquares[i] = new Array();
+    for (var j = 0; j < maxy; ++j)
+      arSquares[i][j] = createSquare(ST_NONE, false);
+  }
 }
