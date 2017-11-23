@@ -1,19 +1,20 @@
 var sz = 20, maxx = 5, maxy = 5;
 var elemBoard, ctx;
-var arSquares;
+var arSquares = new Array();
 const ST_NONE = 0;
 const ST_MINE = -1;
 const MINE_RATE = 0.15;
 const arMoves = [
-  {i: -1, j : -1}, 
-  {i: 0, j : -1}, 
-  {i: 1, j : -1}, 
-  {i: 1, j : 0}, 
-  {i: 1, j : 1}, 
-  {i: 0, j : 1}, 
-  {i: -1, j : 1}, 
-  {i: -1, j : 0}
+  { i: -1, j: -1 },
+  { i: 0, j: -1 },
+  { i: 1, j: -1 },
+  { i: 1, j: 0 },
+  { i: 1, j: 1 },
+  { i: 0, j: 1 },
+  { i: -1, j: 1 },
+  { i: -1, j: 0 }
 ];
+const bgStyle = "#FFFFFF";
 
 window.onload = function () {
   // initialize board element & 2d-context
@@ -29,30 +30,60 @@ window.onload = function () {
     e.preventDefault();
   };
 
-  // register mouse-up event
-  elemBoard.onmouseup = function (e) {
+  // register mouse event
+  elemBoard.onmousedown = function (e) {
+    //console.log("onmousedown: e.button = " + e.button + " e.buttons = " + e.buttons);
     var canvasXY = getCanvasXY(elemBoard, e.clientX, e.clientY);
     var pos = xy2pos(canvasXY);
-    if (e.button == 0)
-      leftClicked(pos);
-    else if (e.button == 2)
+    if (e.button == 2) // right button
       rightClicked(pos);
+  }
+
+  elemBoard.onmouseup = function (e) {
+    //console.log("onmouseup: e.button = " + e.button + " e.buttons = " + e.buttons);
+    var canvasXY = getCanvasXY(elemBoard, e.clientX, e.clientY);
+    var pos = xy2pos(canvasXY);
+    if (e.buttons == 1 || e.buttons == 2) // left & right buttons
+      lrClicked(pos);
+  }
+
+  elemBoard.onclick = function (e) {
+    //console.log("onclick: e.button = " + e.button + " e.buttons = " + e.buttons);
+    var canvasXY = getCanvasXY(elemBoard, e.clientX, e.clientY);
+    var pos = xy2pos(canvasXY);
+    if (e.button == 0) // left button
+      leftClicked(pos);
   };
 
+  // init arSquares
   initSquares();
 
-  // draw the whole elemBoard
+  // draw the board
   drawBoard();
+  for (var i = 0; i < maxx; ++i)
+    for (var j = 0; j < maxy; ++j)
+      drawSquare({ i, j });
 };
 
 function leftClicked(pos) {
-  arSquares[pos.i][pos.j].revealed = true;
-  drawTip(pos.i, pos.j);
+  var sq = arSquares[pos.i][pos.j];
+  if (!sq.revealed) {
+    sq.revealed = true;
+    drawSquare(pos);
+    // boom?
+  }
 }
 
 function rightClicked(pos) {
-  arSquares[pos.i][pos.j].revealed = true;
-  drawTip(pos.i, pos.j);
+  var sq = arSquares[pos.i][pos.j];
+  if (!sq.revealed)
+    sq.flag = !sq.flag;
+
+  drawSquare(pos);
+}
+
+function lrClicked(pos) {
+  var sq = arSquares[pos.i][pos.j];
 }
 
 function drawBoard() {
@@ -67,20 +98,28 @@ function drawBoard() {
     ctx.lineTo(maxx * sz, i * sz);
   }
   ctx.stroke();
-
-  ctx.font = "italic 28px 黑体";
-  ctx.fillStyle = "red";
-  for (var i = 0; i < maxx; ++i)
-    for (var j = 0; j < maxy; ++j)
-      drawTip(i, j);
 }
 
-function drawTip(i, j) {
-  if (arSquares[i][j].revealed) {
-    var tip = (arSquares[i][j].state == ST_MINE ? '*' : arSquares[i][j].state);
-    var xy = pos2xy({ i, j });
-    ctx.fillText(tip, xy.x, xy.y + 20);
-  }
+function drawSquare(pos) {
+  var sq = arSquares[pos.i][pos.j];
+  var tip = '';
+  if (sq.revealed)
+    tip = (sq.state == ST_MINE ? '*' : sq.state);
+  else if (sq.flag)
+    tip = 'F';
+
+  drawTip(pos, tip);
+}
+
+function drawTip(pos, tip) {
+  var sq = arSquares[pos.i][pos.j];
+  var xy = pos2xy(pos);
+
+  ctx.fillStyle = bgStyle;
+  ctx.fillRect(xy.x, xy.y, sz - 1, sz - 1);
+  ctx.font = "bold 28px 黑体";
+  ctx.fillStyle = "black";
+  ctx.fillText(tip, xy.x, xy.y + 20);
 }
 
 function getCanvasXY(canvas, x, y) {
@@ -110,13 +149,13 @@ function checkBound(pos) {
 }
 
 function initSquares() {
-  arSquares = new Array();
   // pass 1: random mines
   for (var i = 0; i < maxx; ++i) {
     arSquares[i] = new Array();
     for (var j = 0; j < maxy; ++j)
-      arSquares[i][j] = createSquare(Math.random() < MINE_RATE ? ST_MINE : ST_NONE, false);
+      arSquares[i][j] = createSquare(Math.random() < MINE_RATE ? ST_MINE : ST_NONE);
   }
+
   // pass 2: count ajacent mines
   for (var i = 0; i < maxx; ++i) {
     for (var j = 0; j < maxy; ++j)
@@ -125,17 +164,18 @@ function initSquares() {
   }
 }
 
-function createSquare(state, revealed) {
+function createSquare(state) {
   var sq = new Object();
   sq.state = state;
-  sq.revealed = revealed;
+  sq.revealed = false;
+  sq.flag = false;
   return sq;
 }
 
 function countAjacentMines(pos) {
   var count = 0;
   for (var m = 0; m < 8; ++m) {
-    var next = {i: pos.i + arMoves[m].i, j: pos.j + arMoves[m].j} 
+    var next = { i: pos.i + arMoves[m].i, j: pos.j + arMoves[m].j }
     if (checkBound(next))
       if (arSquares[next.i][next.j].state == ST_MINE)
         ++count;
