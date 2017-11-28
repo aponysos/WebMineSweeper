@@ -17,6 +17,9 @@ const arMoves = [
 ];
 const bgStyle = "#FFFFFF";
 
+///////////////////////////////////////////////////////////////////////////////
+// window loader
+///////////////////////////////////////////////////////////////////////////////
 window.onload = function () {
   // initialize input & button elements
   inMaxx = document.getElementById("inMaxx");
@@ -25,7 +28,6 @@ window.onload = function () {
 
   // register button event
   btnReset.onclick = function (e) {
-    //console.log("btnReset onclick: e.button = " + e.button + " e.buttons = " + e.buttons);
     resetBoard();
   }
 
@@ -38,9 +40,8 @@ window.onload = function () {
     e.preventDefault();
   };
 
-  // register mouse event
+  // register mouse events
   elemBoard.onmousedown = function (e) {
-    //console.log("onmousedown: e.button = " + e.button + " e.buttons = " + e.buttons);
     var canvasXY = getCanvasXY(elemBoard, e.clientX, e.clientY);
     var pos = xy2pos(canvasXY);
     if (e.button == 2) // right button
@@ -63,19 +64,26 @@ window.onload = function () {
       leftClicked(pos);
   };
 
+  // first-time reset board
   resetBoard();
 };
 
+///////////////////////////////////////////////////////////////////////////////
+// events handlers
+///////////////////////////////////////////////////////////////////////////////
 function leftClicked(pos) {
-  var stack = [pos], todraw = [pos];
+  console.log("leftClicked: " + pos.i + ", " + pos.j);
+
+  var stack = [pos], redraw = [pos];
   while (stack.length > 0) {
     var curPos = stack.pop();
     var curSq = arSquares[curPos.i][curPos.j];
     if (!curSq.revealed) {
       // reveal current square
       curSq.revealed = true;
-      if (!todraw.includes(curPos))
-        todraw.push(curPos);
+      curSq.flag = false;
+      if (!redraw.includes(curPos))
+        redraw.push(curPos);
       // push ajacent squares
       if (curSq.state == ST_NONE)
         for (var m in arMoves) {
@@ -86,19 +94,27 @@ function leftClicked(pos) {
     }
   }
 
-  drawSquares(todraw);
-  // boom?
+  // redraw squares
+  drawSquares(redraw);
+
+  checkBombOrDone();
 }
 
 function rightClicked(pos) {
+  console.log("rightClicked: " + pos.i + ", " + pos.j);
+
   var sq = arSquares[pos.i][pos.j];
   if (!sq.revealed)
     sq.flag = !sq.flag;
 
   drawSquare(pos);
+
+  checkBombOrDone();
 }
 
 function lrClicked(pos) {
+  console.log("lrClicked: " + pos.i + ", " + pos.j);
+
   var sq = arSquares[pos.i][pos.j];
   if (sq.revealed && sq.state > 0) {
     if (countAjacentFlagsAndMines(pos) == sq.state) {
@@ -108,18 +124,26 @@ function lrClicked(pos) {
           var nextSq = arSquares[nextPos.i][nextPos.j];
           if (!nextSq.flag) {
             nextSq.revealed = true;
+            nextSq.flag = false;
             drawSquare(nextPos);
           }
         }
       }
     }
   }
+
+  checkBombOrDone();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// UI functions
+///////////////////////////////////////////////////////////////////////////////
 function resetBoard() {
   // read maxx & maxy from inputs
   maxx = inMaxx.value;
   maxy = inMaxy.value;
+
+  console.log("resetBoard: maxx = " + maxx + ", maxy = " + maxy);
 
   // set board's size
   elemBoard.width = sz * maxx;
@@ -178,6 +202,9 @@ function drawTip(pos, tip) {
   ctx.fillText(tip, xy.x, xy.y + 20);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Utility functions
+///////////////////////////////////////////////////////////////////////////////
 function getCanvasXY(canvas, x, y) {
   var rect = canvas.getBoundingClientRect();
   return {
@@ -204,6 +231,9 @@ function checkBound(pos) {
   return pos.i >= 0 && pos.i < maxx && pos.j >= 0 && pos.j < maxy;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Logic functions
+///////////////////////////////////////////////////////////////////////////////
 function initSquares() {
   // pass 1: random mines
   for (var i = 0; i < maxx; ++i) {
@@ -251,4 +281,29 @@ function countAjacent(pos, pred) {
         ++count;
   }
   return count;
+}
+
+function checkBombOrDone() {
+  if (isBombed())
+    alert("Bombed!");
+  else if (isDone())
+    alert("Done!");
+}
+
+function isBombed() {
+  for (var i = 0; i < maxx; ++i)
+    for (var j = 0; j < maxy; ++j)
+      if (arSquares[i][j].revealed && arSquares[i][j].state == ST_MINE)
+        return true;
+  return false;
+}
+
+function isDone() {
+  for (var i = 0; i < maxx; ++i)
+    for (var j = 0; j < maxy; ++j)
+      if (!arSquares[i][j].revealed && 
+        (!arSquares[i][j].flag || arSquares[i][j].state != ST_MINE)
+        )
+        return false;
+  return true;
 }
