@@ -86,23 +86,7 @@ function leftClicked(pos) {
   console.log("leftClicked: " + pos.i + ", " + pos.j);
 
   var stack = [pos], redraw = [pos];
-  while (stack.length > 0) {
-    var curPos = stack.pop();
-    var curSq = arSquares[curPos.i][curPos.j];
-    if (!curSq.revealed) {
-      // reveal current square
-      revealSquare(curSq);
-      if (!redraw.includes(curPos))
-        redraw.push(curPos);
-      // push ajacent squares
-      if (curSq.state == ST_NONE)
-        for (var m in arMoves) {
-          var nextPos = { i: curPos.i + arMoves[m].i, j: curPos.j + arMoves[m].j };
-          if (checkBound(nextPos))
-            stack.push(nextPos);
-        }
-    }
-  }
+  getRedrawSquares(stack, redraw);
 
   // redraw squares
   drawSquares(redraw);
@@ -132,9 +116,10 @@ function lrClicked(pos) {
         var nextPos = { i: pos.i + arMoves[m].i, j: pos.j + arMoves[m].j };
         if (checkBound(nextPos)) {
           var nextSq = arSquares[nextPos.i][nextPos.j];
-          if (!nextSq.flag) {
-            revealSquare(nextSq);
-            drawSquare(nextPos);
+          if (!nextSq.flag && !nextSq.revealed) {
+            var stack = [nextPos], redraw = [nextPos];
+            getRedrawSquares(stack, redraw);
+            drawSquares(redraw);
           }
         }
       }
@@ -166,7 +151,7 @@ function resetBoard() {
   drawBoard();
   for (var i = 0; i < maxx; ++i)
     for (var j = 0; j < maxy; ++j)
-      drawSquare({ i : i, j : j });
+      drawSquare({ i: i, j: j });
 }
 
 function revealBoard() {
@@ -174,7 +159,7 @@ function revealBoard() {
   for (var i = 0; i < maxx; ++i)
     for (var j = 0; j < maxy; ++j) {
       revealSquare(arSquares[i][j]);
-      drawSquare({ i : i, j : j });
+      drawSquare({ i: i, j: j });
     }
 }
 
@@ -269,6 +254,25 @@ function checkBound(pos) {
   return pos.i >= 0 && pos.i < maxx && pos.j >= 0 && pos.j < maxy;
 }
 
+function getRedrawSquares(stack, redraw) {
+  while (stack.length > 0) {
+    var curPos = stack.pop();
+    var curSq = arSquares[curPos.i][curPos.j];
+    if (!curSq.revealed) {
+      // reveal current square
+      revealSquare(curSq);
+      if (!redraw.includes(curPos))
+        redraw.push(curPos);
+      // push ajacent squares
+      if (curSq.state == ST_NONE)
+        for (var m in arMoves) {
+          var nextPos = { i: curPos.i + arMoves[m].i, j: curPos.j + arMoves[m].j };
+          if (checkBound(nextPos))
+            stack.push(nextPos);
+        }
+    }
+  }
+}
 ///////////////////////////////////////////////////////////////////////////////
 // Logic functions
 ///////////////////////////////////////////////////////////////////////////////
@@ -284,7 +288,7 @@ function initSquares() {
   for (var i = 0; i < maxx; ++i) {
     for (var j = 0; j < maxy; ++j)
       if (arSquares[i][j].state == ST_NONE)
-        arSquares[i][j].state = countAjacentMines({ i : i, j : j });
+        arSquares[i][j].state = countAjacentMines({ i: i, j: j });
   }
 }
 
