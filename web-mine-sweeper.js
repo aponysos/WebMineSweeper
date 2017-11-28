@@ -1,11 +1,10 @@
-var maxx, maxy;
+var maxx, maxy, rate;
 var sz = 20, tipsPadding = 4;
 var inMaxx, inMaxy, btnReset, btnCheat;
 var elemBoard, ctx;
 var arSquares = [];
 const ST_NONE = 0;
 const ST_MINE = -1;
-const MINE_RATE = 0.15;
 const arMoves = [
   { i: -1, j: -1 },
   { i: 0, j: -1 },
@@ -17,6 +16,12 @@ const arMoves = [
   { i: -1, j: 0 }
 ];
 const bgStyle = "#FFFFFF";
+const tipStyles = [
+  "#C0C0C0", // 0
+  "#000080", "#008000", "#800000",
+  "#008080", "#800080", "#808000",
+  "#004040", "#400040", "#404000"
+];
 
 ///////////////////////////////////////////////////////////////////////////////
 // window loader
@@ -25,6 +30,7 @@ window.onload = function () {
   // initialize input & button elements
   inMaxx = document.getElementById("inMaxx");
   inMaxy = document.getElementById("inMaxy");
+  inRate = document.getElementById("inRate");
   btnReset = document.getElementById("btnReset");
   btnCheat = document.getElementById("btnCheat");
 
@@ -145,6 +151,7 @@ function resetBoard() {
   // read maxx & maxy from inputs
   maxx = inMaxx.value;
   maxy = inMaxy.value;
+  rate = inRate.value;
 
   console.log("resetBoard: maxx = " + maxx + ", maxy = " + maxy);
 
@@ -159,7 +166,7 @@ function resetBoard() {
   drawBoard();
   for (var i = 0; i < maxx; ++i)
     for (var j = 0; j < maxy; ++j)
-      drawSquare({ i, j });
+      drawSquare({ i : i, j : j });
 }
 
 function revealBoard() {
@@ -167,7 +174,7 @@ function revealBoard() {
   for (var i = 0; i < maxx; ++i)
     for (var j = 0; j < maxy; ++j) {
       revealSquare(arSquares[i][j]);
-      drawSquare({ i, j });
+      drawSquare({ i : i, j : j });
     }
 }
 
@@ -215,11 +222,6 @@ function drawTip(pos, tip) {
 }
 
 function getTipStyle(tip) {
-  const tipStyles = [
-    "#EEEEEE",
-    "#00C0C0", "#C000C0", "#C0C000", "#008080",
-    "#800080", "#808000", "#404000", "#004040"
-  ];
   switch (tip) {
     case 'F':
       return "red";
@@ -275,14 +277,14 @@ function initSquares() {
   for (var i = 0; i < maxx; ++i) {
     arSquares[i] = [];
     for (var j = 0; j < maxy; ++j)
-      arSquares[i][j] = createSquare(Math.random() < MINE_RATE ? ST_MINE : ST_NONE);
+      arSquares[i][j] = createSquare(Math.random() < rate ? ST_MINE : ST_NONE);
   }
 
   // pass 2: count ajacent mines
   for (var i = 0; i < maxx; ++i) {
     for (var j = 0; j < maxy; ++j)
       if (arSquares[i][j].state == ST_NONE)
-        arSquares[i][j].state = countAjacentMines({ i, j });
+        arSquares[i][j].state = countAjacentMines({ i : i, j : j });
   }
 }
 
