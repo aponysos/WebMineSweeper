@@ -1,6 +1,6 @@
 var maxx, maxy;
 var sz = 20, tipsPadding = 4;
-var inMaxx, inMaxy, btnReset;
+var inMaxx, inMaxy, btnReset, btnCheat;
 var elemBoard, ctx;
 var arSquares = [];
 const ST_NONE = 0;
@@ -26,10 +26,14 @@ window.onload = function () {
   inMaxx = document.getElementById("inMaxx");
   inMaxy = document.getElementById("inMaxy");
   btnReset = document.getElementById("btnReset");
+  btnCheat = document.getElementById("btnCheat");
 
   // register button event
   btnReset.onclick = function (e) {
     resetBoard();
+  }
+  btnCheat.onclick = function (e) {
+    revealBoard();
   }
 
   // initialize board element & 2d-context
@@ -81,8 +85,7 @@ function leftClicked(pos) {
     var curSq = arSquares[curPos.i][curPos.j];
     if (!curSq.revealed) {
       // reveal current square
-      curSq.revealed = true;
-      curSq.flag = false;
+      revealSquare(curSq);
       if (!redraw.includes(curPos))
         redraw.push(curPos);
       // push ajacent squares
@@ -124,8 +127,7 @@ function lrClicked(pos) {
         if (checkBound(nextPos)) {
           var nextSq = arSquares[nextPos.i][nextPos.j];
           if (!nextSq.flag) {
-            nextSq.revealed = true;
-            nextSq.flag = false;
+            revealSquare(nextSq);
             drawSquare(nextPos);
           }
         }
@@ -158,6 +160,15 @@ function resetBoard() {
   for (var i = 0; i < maxx; ++i)
     for (var j = 0; j < maxy; ++j)
       drawSquare({ i, j });
+}
+
+function revealBoard() {
+  console.log("revealBoard");
+  for (var i = 0; i < maxx; ++i)
+    for (var j = 0; j < maxy; ++j) {
+      revealSquare(arSquares[i][j]);
+      drawSquare({ i, j });
+    }
 }
 
 function drawBoard() {
@@ -205,10 +216,10 @@ function drawTip(pos, tip) {
 
 function getTipStyle(tip) {
   const tipStyles = [
-    "#EEEEEE", 
-    "#00C0C0", "#C000C0", "#C0C000", "#008080", 
+    "#EEEEEE",
+    "#00C0C0", "#C000C0", "#C0C000", "#008080",
     "#800080", "#808000", "#404000", "#004040"
-    ];
+  ];
   switch (tip) {
     case 'F':
       return "red";
@@ -283,8 +294,9 @@ function createSquare(state) {
   return sq;
 }
 
-function revealSquare(pos) {
-
+function revealSquare(sq) {
+  sq.revealed = true;
+  sq.flag = false;
 }
 
 function countAjacentMines(pos) {
@@ -330,9 +342,9 @@ function isBombed() {
 function isDone() {
   for (var i = 0; i < maxx; ++i)
     for (var j = 0; j < maxy; ++j)
-      if (!arSquares[i][j].revealed && 
+      if (!arSquares[i][j].revealed &&
         (!arSquares[i][j].flag || arSquares[i][j].state != ST_MINE)
-        )
+      )
         return false;
   return true;
 }
