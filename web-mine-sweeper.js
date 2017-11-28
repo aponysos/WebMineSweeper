@@ -1,4 +1,5 @@
-var sz = 20, maxx = 5, maxy = 5;
+var maxx, maxy;
+var sz = 20, tipsPadding = 4;
 var inMaxx, inMaxy, btnReset;
 var elemBoard, ctx;
 var arSquares = [];
@@ -197,9 +198,33 @@ function drawTip(pos, tip) {
 
   ctx.fillStyle = bgStyle;
   ctx.fillRect(xy.x, xy.y, sz - 1, sz - 1);
-  ctx.font = "bold 28px 黑体";
-  ctx.fillStyle = "black";
-  ctx.fillText(tip, xy.x, xy.y + 20);
+  ctx.font = "bold 18px 微软雅黑";
+  ctx.fillStyle = getTipStyle(tip);
+  ctx.fillText(tip, xy.x + tipsPadding, xy.y + sz - tipsPadding);
+}
+
+function getTipStyle(tip) {
+  const tipStyles = [
+    "#EEEEEE", 
+    "#00C0C0", "#C000C0", "#C0C000", "#008080", 
+    "#800080", "#808000", "#404000", "#004040"
+    ];
+  switch (tip) {
+    case 'F':
+      return "red";
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+      return tipStyles[tip];
+    default:
+      return "black";
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -256,6 +281,10 @@ function createSquare(state) {
   sq.revealed = false;
   sq.flag = false;
   return sq;
+}
+
+function revealSquare(pos) {
+
 }
 
 function countAjacentMines(pos) {
