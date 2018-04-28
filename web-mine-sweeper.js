@@ -85,7 +85,27 @@ window.onload = function () {
 function leftClicked(pos) {
   console.log("leftClicked: " + pos.i + ", " + pos.j);
 
-  clickToReveal(pos);
+  var stack = [pos], redraw = [pos];
+  while (stack.length > 0) {
+    var curPos = stack.pop();
+    var curSq = arSquares[curPos.i][curPos.j];
+    if (!curSq.revealed) {
+      // reveal current square
+      revealSquare(curSq);
+      if (!redraw.includes(curPos))
+        redraw.push(curPos);
+      // push ajacent squares
+      if (curSq.state == ST_NONE)
+        for (var m in arMoves) {
+          var nextPos = { i: curPos.i + arMoves[m].i, j: curPos.j + arMoves[m].j };
+          if (checkBound(nextPos))
+            stack.push(nextPos);
+        }
+    }
+  }
+
+  // redraw squares
+  drawSquares(redraw);
 
   checkBombOrDone();
 }
@@ -112,38 +132,16 @@ function lrClicked(pos) {
         var nextPos = { i: pos.i + arMoves[m].i, j: pos.j + arMoves[m].j };
         if (checkBound(nextPos)) {
           var nextSq = arSquares[nextPos.i][nextPos.j];
-          if (!nextSq.flag)
-            clickToReveal(nextPos);
+          if (!nextSq.flag) {
+            revealSquare(nextSq);
+            drawSquare(nextPos);
+          }
         }
       }
     }
   }
 
   checkBombOrDone();
-}
-
-function clickToReveal(pos) {
-  var stack = [pos], redraw = [pos];
-  while (stack.length > 0) {
-    var curPos = stack.pop();
-    var curSq = arSquares[curPos.i][curPos.j];
-    if (!curSq.revealed) {
-      // reveal current square
-      revealSquare(curSq);
-      if (!redraw.includes(curPos))
-        redraw.push(curPos);
-      // push ajacent squares
-      if (curSq.state == ST_NONE)
-        for (var m in arMoves) {
-          var nextPos = { i: curPos.i + arMoves[m].i, j: curPos.j + arMoves[m].j };
-          if (checkBound(nextPos))
-            stack.push(nextPos);
-        }
-    }
-  }
-
-  // redraw squares
-  drawSquares(redraw);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
