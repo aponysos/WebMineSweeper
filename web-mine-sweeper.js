@@ -261,7 +261,7 @@ function getRedrawSquares(stack, redraw) {
     if (!curSq.revealed) {
       // reveal current square
       revealSquare(curSq);
-      if (!redraw.includes(curPos))
+      if (!redraw.indexOf(curPos) > -1)
         redraw.push(curPos);
       // push ajacent squares
       if (curSq.state == ST_NONE)
